@@ -1,0 +1,6 @@
+langchain
+langchain-community
+langchain-text-splitters
+langchain-ollama
+qdrant-client==1.9.1
+langchain_experimental
