@@ -27,7 +27,6 @@ from langchain_community.vectorstores import Qdrant
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 
-
 from langchain_ollama import (
     OllamaLLM,
     OllamaEmbeddings
@@ -54,7 +53,7 @@ VECTOR_DB_PATH = "vector_store"
 
 QDRANT_HOST = "localhost"
 QDRANT_PORT = 6333
-COLLECTION_NAME = "optima_secure"
+COLLECTION_NAME = "TATA_Maha_Raksha_Supreme_Select"
 TOP_K = 15
 # =========================================================
 # LLM INITIALIZATION
@@ -288,9 +287,9 @@ class RAGChatApplication:
         Chat with RAG application
         """
 
-        print(f"\nUser query: {user_query}\n")
-        print(f"Chat history: {self.chat_history}\n")
-
+        # print(f"\nUser query: {user_query}\n")
+        # print(f"Chat history: {self.chat_history}\n")
+        print(f"rag chain: {self.rag_chain}\n")
         response = self.rag_chain.invoke(
             {
                 "input": user_query,
@@ -343,7 +342,9 @@ def build_rag_pipeline(md_file_path: str):
 
 def start_chat():
 
-    md_file = "optima_secure.md"
+    md_file = f"{COLLECTION_NAME}.md"
+
+    print(f"{md_file}")
 
     # Build vector DB
     vector_store = build_rag_pipeline(md_file)
