@@ -1,35 +1,38 @@
 import requests
 
-url = "http://localhost:11434/api/chat"
+# =========================================================
+# OLLAMA REST API CLIENT
+# =========================================================
 
-payload = {
-    "model": "llama3",
-    "messages": [
-        {
-            "role": "system",
-            "content": "You are an insurance assistant."
-        },
-        {
-            "role": "user",
-            "content": "What is term insurance?"
-        }
-    ],
-    "stream": False
-}
+class OllamaRestLLM:
 
-response = requests.post(url, json=payload)
+    def __init__(
+        self,
+        model: str,
+        base_url: str,
+        temperature: float = 0
+    ):
+        self.model = model
+        self.base_url = base_url
+        self.temperature = temperature
 
-print(response.json()["message"]["content"])
+    def invoke(self, prompt: str):
 
+        url = f"{self.base_url}/api/generate"
 
-class OllamaClient:
-    @staticmethod
-    def chat(messages, model="llama3", stream=False):
-        url = "http://localhost:11434/api/chat"
         payload = {
-            "model": model,
-            "messages": messages,
-            "stream": stream
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": self.temperature
+            }
         }
-        response = requests.post(url, json=payload)
-        return response.json()
+
+        response = requests.post(url, json=payload, timeout=300)
+
+        response.raise_for_status()
+
+        result = response.json()
+
+        return result["response"]

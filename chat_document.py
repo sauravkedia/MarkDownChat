@@ -1,39 +1,16 @@
-"""
-Production Grade Markdown RAG Application
-=========================================
-
-Start Qdrant:
--------------
-docker run -p 6333:6333 qdrant/qdrant
-
-Start Ollama:
--------------
-ollama pull mistral
-ollama pull nomic-embed-text
-
-Run:
-----
-python chat_document.py
-"""
-
 from langchain_core.documents import Document
 from langchain_community.document_loaders import TextLoader
 
 from langchain_text_splitters import ExperimentalMarkdownSyntaxTextSplitter
-from langchain_text_splitters import MarkdownHeaderTextSplitter
-from langchain_experimental.text_splitter import SemanticChunker
+# from langchain_experimental.text_splitter import SemanticChunker
 
 from langchain_community.vectorstores import Qdrant
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 
 from langchain_ollama import (
-    OllamaLLM,
     OllamaEmbeddings
 )
-
-from langchain_classic.chains.retrieval import create_retrieval_chain
-from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
@@ -42,6 +19,8 @@ from langchain_core.messages import (
     HumanMessage,
     AIMessage
 )
+
+from llmrequest import OllamaRestLLM
 
 # =========================================================
 # CONFIGURATION
@@ -53,14 +32,20 @@ VECTOR_DB_PATH = "vector_store"
 
 QDRANT_HOST = "localhost"
 QDRANT_PORT = 6333
-COLLECTION_NAME = "TATA_Maha_Raksha_Supreme_Select"
+COLLECTION_NAME = "optima_secure"
 TOP_K = 15
 # =========================================================
 # LLM INITIALIZATION
 # =========================================================
 
-llm = OllamaLLM(
+# llm = OllamaLLM(
+#     model=OLLAMA_MODEL,
+#     temperature=0
+# )
+
+llm = OllamaRestLLM(
     model=OLLAMA_MODEL,
+    base_url=OLLAMA_BASE_URL,
     temperature=0
 )
 
@@ -97,25 +82,25 @@ class MarkdownLoader:
 # DOCUMENT CHUNKING
 # =========================================================
 
-class SemanticDocumentChunker:
+# class SemanticDocumentChunker:
 
-    @staticmethod
-    def chunk_documents(documents):
-        """
-        Split documents into chunks
-        """
+#     @staticmethod
+#     def chunk_documents(documents):
+#         """
+#         Split documents into chunks
+#         """
 
-        markdown_text = [doc.page_content for doc in documents]
+#         markdown_text = [doc.page_content for doc in documents]
 
-        semantic_chunker = SemanticChunker(
-            embeddings=embeddings,
-            breakpoint_threshold_type="percentile",  # or "standard_deviation"
-            breakpoint_threshold_amount=95           # higher = bigger chunks
-        )
+#         semantic_chunker = SemanticChunker(
+#             embeddings=embeddings,
+#             breakpoint_threshold_type="percentile",  # or "standard_deviation"
+#             breakpoint_threshold_amount=95           # higher = bigger chunks
+#         )
 
-        split_docs = semantic_chunker.create_documents(markdown_text)
+#         split_docs = semantic_chunker.create_documents(markdown_text)
 
-        return split_docs
+#         return split_docs
 
 class MDDocumentChunker:
 
@@ -230,14 +215,20 @@ class RAGChatApplication:
 
         self.retriever = self.vector_store.get_retriever()
 
-        self.rag_chain = self._build_rag_chain()
+    
+    def _build_prompt(self, context: str, user_query: str):
 
-    def _build_rag_chain(self):
-        """
-        Build retrieval chain using create_retrieval_chain
-        """
+        history_text = ""
 
-        system_prompt = """
+        for message in self.chat_history:
+
+            if isinstance(message, HumanMessage):
+                history_text += f"User: {message.content}\n"
+
+            elif isinstance(message, AIMessage):
+                history_text += f"Assistant: {message.content}\n"
+
+        prompt = f"""
             You are a helpful and accurate Insurance AI Assistant.
 
             Your task is to answer user questions strictly using the provided context.
@@ -250,54 +241,42 @@ class RAGChatApplication:
             5. If the context does not contain the answer, respond exactly with:
             "I could not find the answer in the provided documents."
 
+            Chat History:
+            {history_text}
+
             Provided Context:
             {context}
+
+            User Question:
+            {user_query}
+
+            Answer:
             """
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system",system_prompt),
-            MessagesPlaceholder(variable_name="chat_history"),("human","{input}")
-            ]
-)
-        # print("\n\n---- prompt created start ----\n\n")
-        # print(f"{prompt}")
-        # print("\n\n---- prompt created end ----\n\n")
-        document_chain = create_stuff_documents_chain(
-            llm=llm,
-            prompt=prompt
-        )
-
-        # print("\n\n---- document_chain start ----\n\n")
-        # print(f"{document_chain}")
-        # print("\n\n---- document_chain end ----\n\n")
-
-        retrieval_chain = create_retrieval_chain(
-            self.retriever,
-            document_chain
-        )
-
-        # print("\n\n---- retrieval_chain start ----\n\n")
-        # print(f"retrieval_chain: {retrieval_chain}")
-        # print("\n\n---- retrieval_chain end ----\n\n")
-
-        return retrieval_chain
+        return prompt
 
     def chat(self, user_query: str):
         """
         Chat with RAG application
         """
 
-        # print(f"\nUser query: {user_query}\n")
-        # print(f"Chat history: {self.chat_history}\n")
-        print(f"rag chain: {self.rag_chain}\n")
-        response = self.rag_chain.invoke(
-            {
-                "input": user_query,
-                "chat_history": self.chat_history
-            }
+        # Step 1: Retrieve relevant documents
+        response = self.retriever.invoke(user_query)
+        
+        # Step 2: Build context
+        context = "\n\n".join(
+            [doc.page_content for doc in response]
         )
 
-        answer = response["answer"]
+        # Step 3: Create prompt
+        prompt = self._build_prompt(
+            context=context,
+            user_query=user_query
+        )
+
+        # Step 4: Call Ollama REST API
+        answer = llm.invoke(prompt)
+        # answer = llm.invoke(prompt)
 
         # Save chat history
         self.chat_history.append(
@@ -350,11 +329,6 @@ def start_chat():
     vector_store = build_rag_pipeline(md_file)
 
     rag_app = RAGChatApplication(vector_store)
-
-    # print("\n==============================")
-    # print("Markdown RAG Chat Started")
-    # print("==============================")
-    # print("Type 'exit' to stop\n")
 
     while True:
 
