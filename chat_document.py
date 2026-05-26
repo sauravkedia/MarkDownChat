@@ -8,6 +8,8 @@ from langchain_community.vectorstores import Qdrant
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 
+from datetime import datetime
+
 from langchain_ollama import (
     OllamaEmbeddings
 )
@@ -26,7 +28,7 @@ from llmrequest import OllamaRestLLM
 # CONFIGURATION
 # =========================================================
 
-OLLAMA_MODEL = "deepseek-r1"
+OLLAMA_MODEL = "qwen2.5"
 OLLAMA_BASE_URL = "http://localhost:11434"
 
 QDRANT_HOST = "localhost"
@@ -262,7 +264,7 @@ class RAGChatApplication:
 
         # Step 1: Retrieve relevant documents
         response = self.retriever.invoke(user_query)
-        print(f"Retrieved relevant documents from vector store: {response}")
+        # print(f"Retrieved relevant documents from vector store: {response}")
         
         # Step 2: Build context
         context = "\n\n".join(
@@ -339,8 +341,15 @@ def start_chat():
             print("Exiting chat...")
             break
 
+        now = datetime.now()
+        formatted = now.strftime("%Y-%m-%d %H:%M:%S")
+        print("Current date and time:", formatted)
+        
         response = rag_app.chat(query)
 
+        now = datetime.now()
+        formatted = now.strftime("%Y-%m-%d %H:%M:%S")
+        print("Current date and time:", formatted)
         print(f"\nAI: {response}\n")
 
 
