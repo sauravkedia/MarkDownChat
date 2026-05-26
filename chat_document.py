@@ -26,23 +26,19 @@ from llmrequest import OllamaRestLLM
 # CONFIGURATION
 # =========================================================
 
-OLLAMA_MODEL = "mistral"
+OLLAMA_MODEL = "deepseek-r1"
 OLLAMA_BASE_URL = "http://localhost:11434"
-VECTOR_DB_PATH = "vector_store"
 
 QDRANT_HOST = "localhost"
 QDRANT_PORT = 6333
+
 COLLECTION_NAME = "optima_secure"
-TOP_K = 15
+TOP_K = 10
+
+
 # =========================================================
 # LLM INITIALIZATION
 # =========================================================
-
-# llm = OllamaLLM(
-#     model=OLLAMA_MODEL,
-#     temperature=0
-# )
-
 llm = OllamaRestLLM(
     model=OLLAMA_MODEL,
     base_url=OLLAMA_BASE_URL,
@@ -50,7 +46,7 @@ llm = OllamaRestLLM(
 )
 
 embeddings = OllamaEmbeddings(
-    model="nomic-embed-text",
+    model="bge-m3:567m", #"nomic-embed-text", #"bge-m3:567m"
     base_url=OLLAMA_BASE_URL
 )
 
@@ -115,9 +111,9 @@ class MDDocumentChunker:
         )
 
         headers_to_split_on = [
-            ("#", "Header 1"),
-            # ("##", "Header 2"),
-            # ("###", "Header 3"),
+            ("#", "Header_1"),
+            # ("##", "Header_2"),
+            # ("###", "Header_3"),
         ]
 
         # Step 3: Initialize markdown splitter
@@ -128,7 +124,6 @@ class MDDocumentChunker:
             )
         )
 
-        # markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on, strip_headers=False)
 
         # Step 4: Split markdown
         split_docs = markdown_splitter.split_text(
@@ -152,15 +147,11 @@ class VectorStoreManager:
             port=QDRANT_PORT
         )
 
-        self._create_collection_if_not_exists()
-
-        self.vector_store = Qdrant(
-            client=self.qdrant_client,
-            collection_name=COLLECTION_NAME,
-            embeddings=embeddings
-        )
-
-        self.add_documents(chunks)
+        if self._create_collection_if_not_exists():
+            self._create_vector_store()
+            self.add_documents(chunks)
+        else:
+            self._create_vector_store()
 
     
     def _create_collection_if_not_exists(self):
@@ -176,13 +167,22 @@ class VectorStoreManager:
             self.qdrant_client.create_collection(
                 collection_name=COLLECTION_NAME,
                 vectors_config=VectorParams(
-                    size=768,
+                    size=1024,
                     distance=Distance.COSINE
                 )
             )
 
             print(f"Created collection: {COLLECTION_NAME}")
+            return True
+        return False
 
+    def _create_vector_store(self):
+        self.vector_store = Qdrant(
+            client=self.qdrant_client,
+            collection_name=COLLECTION_NAME,
+            embeddings=embeddings
+        )
+        
     def add_documents(
         self,
         documents: list[Document]
@@ -262,6 +262,7 @@ class RAGChatApplication:
 
         # Step 1: Retrieve relevant documents
         response = self.retriever.invoke(user_query)
+        print(f"Retrieved relevant documents from vector store: {response}")
         
         # Step 2: Build context
         context = "\n\n".join(
