@@ -129,7 +129,7 @@ class VectorStoreManager:
 
     def __init__(self, chunks):
 
-        self.index_name = config.OPENSEARCH_INDEX
+        self.index_name = config.COLLECTION_NAME
 
         self.client = OpenSearch(
             hosts=[{
