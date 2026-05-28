@@ -1,3 +1,4 @@
+import requests
 from langchain_core.documents import Document
 from langchain_community.document_loaders import TextLoader
 
@@ -47,19 +48,37 @@ embeddings = OllamaEmbeddings(
 class MarkdownLoader:
 
     @staticmethod
-    def load_markdown(md_file_path: str):
+    def load_markdown(source: str):
         """
-        Load markdown file
+        Load markdown content from either:
+        - Local file path
+        - Remote URL
         """
 
+        # Load from URL
+        if source.startswith("http://") or source.startswith("https://"):
+
+            response = requests.get(source)
+            response.raise_for_status()
+
+            markdown_content = response.text
+
+            documents = [
+                Document(
+                    page_content=markdown_content,
+                    metadata={"source": source}
+                )
+            ]
+
+            return documents
+
+        # Load from local file
         loader = TextLoader(
-            md_file_path,
+            source,
             encoding="utf-8"
         )
 
         documents = loader.load()
-
-        # print(f"Loaded markdown file: {md_file_path}")
 
         return documents
 
@@ -88,38 +107,6 @@ class SemanticDocumentChunker:
 
         return split_docs
 
-# class MDDocumentChunker:
-
-#     @staticmethod
-#     def chunk_documents(documents):
-#         """
-#         Split documents into chunks
-#         """
-
-#         markdown_text = "\n".join(
-#             [doc.page_content for doc in documents]
-#         )
-
-#         headers_to_split_on = [
-#             ("#", "Header_1"),
-#             # ("##", "Header_2"),
-#             # ("###", "Header_3"),
-#         ]
-
-#         # Step 3: Initialize markdown splitter
-#         markdown_splitter = (
-#             ExperimentalMarkdownSyntaxTextSplitter(
-#                 headers_to_split_on = headers_to_split_on,
-#                 strip_headers=False
-#             )
-#         )
-
-
-#         # Step 4: Split markdown
-#         split_docs = markdown_splitter.split_text(
-#             markdown_text
-#         )
-#         return split_docs
 
 # =========================================================
 # VECTOR STORE MANAGEMENT
@@ -216,7 +203,6 @@ class RAGChatApplication:
 
         self.retriever = self.vector_store.get_retriever()
 
-    
     def _build_prompt(self, context: str, user_query: str):
 
         history_text = ""
@@ -240,7 +226,7 @@ class RAGChatApplication:
             3. If multiple relevant details exist, summarize them clearly.
             4. Keep responses concise, professional, and easy to understand.
             5. If the context does not contain the answer, respond exactly with:
-            "I could not find the answer in the provided documents."
+            "I could not find the answer in the product brochure."
 
             Chat History:
             {history_text}

@@ -423,7 +423,7 @@ EMBEDDING_DIMENSION = 1024            # Embedding vector dimension
 # OpenSearch Configuration
 OPENSEARCH_HOST = "localhost"          # OpenSearch host
 OPENSEARCH_PORT = 9200                # OpenSearch port
-OPENSEARCH_INDEX = "optima_secure"    # Index name
+COLLECTION_NAME = "optima_secure"    # Index name
 
 # Retrieval Configuration
 TOP_K = 10                            # Number of relevant documents to retrieve
@@ -497,25 +497,58 @@ gunicorn -w 4 -k uvicorn.workers.UvicornWorker chat_document:app --bind 0.0.0.0:
 
 ### Docker Deployment
 
-```dockerfile
-FROM python:3.13-slim
+The application includes a multi-stage Dockerfile optimized for production and a docker-compose.yml for running all services together.
 
-WORKDIR /app
+#### Using Docker Compose (Recommended)
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+The easiest way to run the full stack with Ollama, OpenSearch, and the Chat API:
 
-COPY . .
-
-EXPOSE 5000
-
-CMD ["python", "chat_document.py", "--api"]
+```bash
+docker-compose up --build
 ```
 
-Build and run:
+This will:
+- Build the Chat API Docker image
+- Start Ollama service (port 11434)
+- Start OpenSearch service (port 9200)
+- Start Chat API service (port 5000)
+- Pull required models automatically
+- Set up health checks for all services
+
+Access the API:
+- **API**: http://localhost:5000
+- **Swagger UI**: http://localhost:5000/docs
+- **OpenSearch**: http://localhost:9200
+
+Stop all services:
 ```bash
+docker-compose down
+```
+
+#### Using Docker Build & Run
+
+For a standalone Docker setup (requires external Ollama and OpenSearch):
+
+```bash
+# Build the image
 docker build -t chat-document .
-docker run -p 5000:5000 chat-document
+
+# Run the container (requires Ollama and OpenSearch running separately)
+docker run -p 5000:5000 \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+  -e OPENSEARCH_HOST=host.docker.internal \
+  -e OPENSEARCH_PORT=9200 \
+  -v /path/to/optima_secure.md:/app/optima_secure.md:ro \
+  chat-document
+```
+
+#### Docker Compose with Custom Configuration
+
+To use a custom config.py or documents:
+
+```bash
+# Edit the volumes section in docker-compose.yml to mount your files
+docker-compose up --build
 ```
 
 ---
