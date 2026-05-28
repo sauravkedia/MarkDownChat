@@ -20,40 +20,24 @@ from langchain_core.messages import (
 )
 
 from llmrequest import OllamaRestLLM
-
+import config
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 
 # =========================================================
-# CONFIGURATION
-# =========================================================
-
-OLLAMA_MODEL = "qwen2.5"
-OLLAMA_BASE_URL = "http://localhost:11434"
-
-OPENSEARCH_HOST = "localhost"
-OPENSEARCH_PORT = 9200
-OPENSEARCH_INDEX = "optima_secure"
-
-COLLECTION_NAME = "optima_secure"
-TOP_K = 10
-EMBEDDING_DIMENSION = 1024
-
-
-# =========================================================
 # LLM INITIALIZATION
 # =========================================================
 llm = OllamaRestLLM(
-    model=OLLAMA_MODEL,
-    base_url=OLLAMA_BASE_URL,
+    model=config.LLM_MODEL,
+    base_url=config.OLLAMA_BASE_URL,
     temperature=0
 )
 
 embeddings = OllamaEmbeddings(
-    model="bge-m3:567m", #"nomic-embed-text", #"bge-m3:567m"
-    base_url=OLLAMA_BASE_URL
+    model=config.EMBEDDING_MODEL,
+    base_url=config.OLLAMA_BASE_URL
 )
 
 # =========================================================
@@ -145,12 +129,12 @@ class VectorStoreManager:
 
     def __init__(self, chunks):
 
-        self.index_name = OPENSEARCH_INDEX
+        self.index_name = config.OPENSEARCH_INDEX
 
         self.client = OpenSearch(
             hosts=[{
-                "host": OPENSEARCH_HOST,
-                "port": OPENSEARCH_PORT
+                "host": config.OPENSEARCH_HOST,
+                "port": config.OPENSEARCH_PORT
             }],
             http_compress=True,
             use_ssl=False,
@@ -162,7 +146,7 @@ class VectorStoreManager:
         self.vector_store = OpenSearchVectorSearch(
             index_name=self.index_name,
             embedding_function=embeddings,
-            opensearch_url=f"http://{OPENSEARCH_HOST}:{OPENSEARCH_PORT}"
+            opensearch_url=f"http://{config.OPENSEARCH_HOST}:{config.OPENSEARCH_PORT}"
         )
 
         # Add documents only if index is empty
@@ -185,7 +169,7 @@ class VectorStoreManager:
                     "properties": {
                         "vector_field": {
                             "type": "knn_vector",
-                            "dimension": 1024,
+                            "dimension": config.EMBEDDING_DIMENSION,
                             "method": {
                                 "name": "hnsw",
                                 "space_type": "cosinesimil",
@@ -215,7 +199,7 @@ class VectorStoreManager:
     def get_retriever(self):
 
         return self.vector_store.as_retriever(
-            search_kwargs={"k": TOP_K}
+            search_kwargs={"k": config.TOP_K}
         )
     
 # =========================================================
@@ -340,7 +324,7 @@ def build_rag_pipeline(md_file_path: str):
 
 def start_chat():
 
-    md_file = f"{COLLECTION_NAME}.md"
+    md_file = f"{config.COLLECTION_NAME}.md"
 
     print(f"{md_file}")
 
@@ -426,7 +410,7 @@ class ChatAPI:
         self.rag_app = rag_app
         self.app = FastAPI(
             title="Chat Document API",
-            description="RAG-based document chat API using Ollama and Qdrant",
+            description="RAG-based document chat API using Ollama and OpenSearch",
             version="1.0.0"
         )
         
@@ -454,8 +438,8 @@ class ChatAPI:
             """Check if the API server is running and get configuration info."""
             return StatusResponse(
                 status="healthy",
-                model=OLLAMA_MODEL,
-                collection=COLLECTION_NAME
+                model=config.LLM_MODEL,
+                collection=config.COLLECTION_NAME
             )
         
         @self.app.post(
@@ -588,7 +572,7 @@ if __name__ == "__main__":
         print("Starting Chat Document API server (FastAPI)...")
         print("Loading vector store and initializing RAG pipeline...\n")
         
-        md_file = f"{COLLECTION_NAME}.md"
+        md_file = f"{config.COLLECTION_NAME}.md"
         vector_store = build_rag_pipeline(md_file)
         rag_app = RAGChatApplication(vector_store)
         
