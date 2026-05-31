@@ -13,5 +13,5 @@ OPENSEARCH_HOST = "localhost"
 OPENSEARCH_PORT = 9200
 TOP_K = 10
 
-COLLECTION_NAME = "optima_secure"
+COLLECTION_NAME = "optima_secure_v2"
 

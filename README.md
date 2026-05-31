@@ -127,6 +127,11 @@ Place your markdown document in the repository root:
 
 ## Running the Application
 
+### For Cleanup Vector DB Store
+```bash
+curl -X DELETE "http://localhost:9200/optima_secure"
+```
+
 ### CLI Mode (Interactive Chat)
 
 ```bash
