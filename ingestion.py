@@ -135,12 +135,12 @@ class IndexManager:
             "mappings": {
                 "properties": {
                     "vector_field": {
-                        "type": config.EMBEDDING_TYPE,
-                        "dimension": config.EMBEDDING_DIMENSION,
+                        "type": os.getenv("EMBEDDING_TYPE"),
+                        "dimension": os.getenv("EMBEDDING_DIMENSION"),
                         "method": {
-                            "name": config.EMBEDDING_METHOD_NAME,
-                            "space_type": config.EMBEDDING_METHOD_SPACETYPE,
-                            "engine": config.EMBEDDING_METHOD_ENGINE
+                            "name": os.getenv("EMBEDDING_METHOD_NAME"),
+                            "space_type": os.getenv("EMBEDDING_METHOD_SPACETYPE"),
+                            "engine": os.getenv("EMBEDDING_METHOD_ENGINE")
                         }
                     },
                     "text": {
