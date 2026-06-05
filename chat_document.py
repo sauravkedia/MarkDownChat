@@ -3,14 +3,16 @@ from langchain_core.messages import HumanMessage, AIMessage
 from llmrequest import OllamaRestLLM
 from ingestion import VectorStoreRetriever, build_rag_pipeline
 from chat_api import ChatAPI
-import config
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 # =========================================================
 # LLM INITIALIZATION
 # =========================================================
 llm = OllamaRestLLM(
-    model=config.LLM_MODEL,
-    base_url=config.OLLAMA_BASE_URL,
+    model=os.getenv("LLM_MODEL"),
+    base_url=os.getenv("OLLAMA_BASE_URL"),
     temperature=0
 )
 
@@ -90,10 +92,10 @@ class RAGChatApplication:
 # =========================================================
 
 def start_chat():
-    md_file = f"{config.COLLECTION_NAME}.md"
+    md_file = f"{os.getenv('COLLECTION_NAME')}.md"
     print(f"{md_file}")
 
-    vector_store = build_rag_pipeline(md_file, config.COLLECTION_NAME)
+    vector_store = build_rag_pipeline(md_file, os.getenv("COLLECTION_NAME"))
     rag_app = RAGChatApplication(vector_store)
 
     while True:
@@ -125,8 +127,8 @@ if __name__ == "__main__":
         print("Starting Chat Document API server (FastAPI)...")
         print("Loading vector store and initializing RAG pipeline...\n")
 
-        md_file = f"{config.COLLECTION_NAME}.md"
-        vector_store = build_rag_pipeline(md_file,config.COLLECTION_NAME)
+        md_file = f"{os.getenv('COLLECTION_NAME')}.md"
+        vector_store = build_rag_pipeline(md_file, os.getenv("COLLECTION_NAME"))
         rag_app = RAGChatApplication(vector_store)
 
         api = ChatAPI(rag_app)

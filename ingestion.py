@@ -5,13 +5,14 @@ from langchain_experimental.text_splitter import SemanticChunker
 from langchain_community.vectorstores import OpenSearchVectorSearch
 from opensearchpy import OpenSearch
 from langchain_ollama import OllamaEmbeddings
-
-import config
 import utility
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 embeddings = OllamaEmbeddings(
-    model=config.EMBEDDING_MODEL,
-    base_url=config.OLLAMA_BASE_URL
+    model=os.getenv("EMBEDDING_MODEL"),
+    base_url=os.getenv("OLLAMA_BASE_URL")
 )
 
 
@@ -61,8 +62,8 @@ class OpenSearchClient:
     def __init__(self):
         self.client = OpenSearch(
             hosts=[{
-                "host": config.OPENSEARCH_HOST,
-                "port": config.OPENSEARCH_PORT
+                "host": os.getenv("OPENSEARCH_HOST"),
+                "port": os.getenv("OPENSEARCH_PORT")
             }],
             http_compress=True,
             use_ssl=False,
@@ -82,8 +83,8 @@ class VectorStoreFactory:
             index_name=index_name,
             embedding_function=embeddings,
             opensearch_url=(
-                f"http://{config.OPENSEARCH_HOST}:"
-                f"{config.OPENSEARCH_PORT}"
+                f"http://{os.getenv('OPENSEARCH_HOST')}:"
+                f"{os.getenv('OPENSEARCH_PORT')}"
             )
         )
 
@@ -106,7 +107,7 @@ class VectorStoreRetriever:
 
         return self.vector_store_factory.as_retriever(
             search_kwargs={
-                "k": k or config.TOP_K
+                "k": k or os.getenv("TOP_K")
             }
         )
 
@@ -128,7 +129,7 @@ class IndexManager:
         index_body = {
             "settings": {
                 "index": {
-                    "knn": config.EMBEDDING_KNN_INDEXING
+                    "knn": os.getenv("EMBEDDING_KNN_INDEXING")
                 }
             },
             "mappings": {

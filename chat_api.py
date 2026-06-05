@@ -4,7 +4,9 @@ from models import *
 from ingestion import ingest_markdown
 from langchain_core.messages import HumanMessage, AIMessage
 from datetime import datetime
-
+from dotenv import load_dotenv
+import os
+load_dotenv()
 # =========================================================
 # FASTAPI APPLICATION
 # =========================================================
@@ -39,7 +41,7 @@ class ChatAPI:
         async def status():
             return StatusResponse(
                 status="healthy",
-                model=config.LLM_MODEL
+                model=os.getenv("LLM_MODEL")
             )
 
         @self.app.post(
@@ -55,7 +57,7 @@ class ChatAPI:
         async def chat(chat_request: ChatRequest):
             try:
                 user_message = chat_request.message.strip()
-                collection_name = (chat_request.collection_name or config.COLLECTION_NAME).strip()
+                collection_name = (chat_request.collection_name or os.getenv("COLLECTION_NAME")).strip()
 
                 if not user_message:
                     raise HTTPException(status_code=400, detail="Message cannot be empty")
@@ -133,7 +135,7 @@ class ChatAPI:
         async def ingest(request: IngestRequest):
             try:
                 markdown_text = request.markdown_text.strip()
-                collection_name = (request.collection_name or config.COLLECTION_NAME).strip()
+                collection_name = (request.collection_name or os.getenv("COLLECTION_NAME")).strip()
 
                 if not markdown_text:
                     raise HTTPException(status_code=400, detail="Markdown text cannot be empty")

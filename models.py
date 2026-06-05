@@ -1,15 +1,16 @@
 
 from pydantic import BaseModel
 from typing import Optional
-import config
-
+from dotenv import load_dotenv
+import os
+load_dotenv()
 # =========================================================
 # PYDANTIC MODELS FOR REQUEST/RESPONSE VALIDATION
 # =========================================================
 
 class ChatRequest(BaseModel):
     message: str
-    collection_name: Optional[str] = config.COLLECTION_NAME
+    collection_name: Optional[str] = os.getenv("COLLECTION_NAME")
 
     class Config:
         json_schema_extra = {
@@ -29,7 +30,7 @@ class ChatResponse(BaseModel):
 
 class IngestRequest(BaseModel):
     markdown_text: str
-    collection_name: Optional[str] = config.COLLECTION_NAME
+    collection_name: Optional[str] = os.getenv("COLLECTION_NAME")
 
     class Config:
         json_schema_extra = {
