@@ -128,18 +128,18 @@ class IndexManager:
         index_body = {
             "settings": {
                 "index": {
-                    "knn": True
+                    "knn": config.EMBEDDING_KNN_INDEXING
                 }
             },
             "mappings": {
                 "properties": {
                     "vector_field": {
-                        "type": "knn_vector",
+                        "type": config.EMBEDDING_TYPE,
                         "dimension": config.EMBEDDING_DIMENSION,
                         "method": {
-                            "name": "hnsw",
-                            "space_type": "cosinesimil",
-                            "engine": "lucene"
+                            "name": config.EMBEDDING_METHOD_NAME,
+                            "space_type": config.EMBEDDING_METHOD_SPACETYPE,
+                            "engine": config.EMBEDDING_METHOD_ENGINE
                         }
                     },
                     "text": {

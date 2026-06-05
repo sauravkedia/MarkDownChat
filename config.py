@@ -8,10 +8,14 @@ LLM_MODEL = "qwen2.5"
 
 EMBEDDING_MODEL = "bge-m3:567m" #"nomic-embed-text"
 EMBEDDING_DIMENSION = 1024
+EMBEDDING_TYPE = "knn_vector"
+EMBEDDING_METHOD_NAME = "hnsw"
+EMBEDDING_METHOD_SPACETYPE = "cosinesimil"
+EMBEDDING_METHOD_ENGINE = "lucene"
+EMBEDDING_KNN_INDEXING = True
 
 OPENSEARCH_HOST = "localhost"
 OPENSEARCH_PORT = 9200
 TOP_K = 10
 
-COLLECTION_NAME = "optima_secure_v2"
-
+COLLECTION_NAME = "optima_secure"
